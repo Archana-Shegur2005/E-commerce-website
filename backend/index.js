@@ -10,8 +10,7 @@ const app = express()
 
 app.use(cors({
     origin: [
-        'http://localhost:3000', 
-        'https://ecommerceshopyy.netlify.app/' // Will update after deployment
+        'https://ecommerceshopyy.netlify.app' // Will update after deployment
     ],
     credentials: true
 }))
