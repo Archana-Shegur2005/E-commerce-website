@@ -6,6 +6,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import SummaryApi from '../common';
 import { toast } from 'react-toastify';
 import Context from '../context';
+import { useDispatch } from 'react-redux'; // ADD THIS
+import { setUserDetails } from '../store/userSlice'; // ADD THIS
 
 const Login = () => {
     const [showPassword,setShowPassword] = useState(false)
@@ -15,6 +17,8 @@ const Login = () => {
     })
     const navigate = useNavigate()
     const { fetchUserDetails } = useContext(Context)
+    const dispatch = useDispatch() // ADD THIS
+
     const handleOnChange = (e) =>{
         const { name , value } = e.target
 
@@ -41,8 +45,40 @@ const Login = () => {
 
         if(dataApi.success){
             toast.success(dataApi.message) 
-            fetchUserDetails()
+            
+            // ✅ STORE THE TOKEN (CRITICAL!)
+            if (dataApi.data) {
+                localStorage.setItem('token', dataApi.data)
+                console.log('Token stored:', dataApi.data)
+            }
+            
+            // ✅ UPDATE REDUX STATE IMMEDIATELY
+            // Fetch fresh user data and update Redux
+            const userResponse = await fetch(SummaryApi.current_user.url, {
+                method: SummaryApi.current_user.method,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${dataApi.data}`
+                }
+            })
+            
+            const userData = await userResponse.json()
+            if (userData.success) {
+                dispatch(setUserDetails(userData.data))
+                console.log('User data updated in Redux:', userData.data)
+            }
+            
+            // ✅ FORCE STATE REFRESH
+            fetchUserDetails() // This updates context
+            
+            // ✅ NAVIGATE AND FORCE UPDATE
             navigate('/')
+            
+            // ✅ OPTIONAL: Force page reload after delay
+            setTimeout(() => {
+                window.location.reload() // This ensures everything updates
+            }, 500)
             
         }
 
@@ -50,7 +86,6 @@ const Login = () => {
             toast.error(dataApi.message)
         }
     }
-    console.log("data login",data)
     
   return (
     <section id='login'>
